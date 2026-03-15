@@ -101,18 +101,3 @@ docker-compose up -d
 * **Bot startet nicht:** Prüfe Logs via `docker-compose logs -f ecoflow-bot` für Fehler bei Node oder Playwright.
 
 ---
-
-## 11. Zusammenfassung
-
-* Bot läuft vollständig autonom im Docker-Container.
-* Healthcheck und Screenshot-Retention sind **optionale, konfigurierbare Features**.
-* Persistente Daten (Screenshots, Session) bleiben erhalten, selbst nach Neustart des Containers.
-
-```
-
----
-
-Wenn du willst, kann ich direkt noch **alle Dateien inklusive Dockerfile, bot.js, healthcheck.js und package.json** in **einem Archiv oder zusammenhängendem Codeblock** liefern, sodass alles sofort zusammen benutzt werden kann.  
-
-Willst du, dass ich das mache?
-```
