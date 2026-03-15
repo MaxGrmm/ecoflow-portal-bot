@@ -1,0 +1,14 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Bot runtime files
+session.json
+screenshots/
+
+# Environment files
+.env
+
+# OS
+.DS_Store
+Thumbs.db
