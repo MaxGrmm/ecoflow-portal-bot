@@ -18,7 +18,7 @@ async function triggerHealthcheck() {
     return;
   }
 
-  
+
   const stats = fs.statSync(SESSION_FILE);
   if (stats.size === 0) {
     console.log("Session leer – Healthcheck übersprungen");
@@ -34,5 +34,5 @@ async function triggerHealthcheck() {
 }
 
 console.log(`Healthcheck gestartet: ${URL} alle ${INTERVAL_MIN} Minuten`);
-triggerHealthcheck(); 
+triggerHealthcheck();
 setInterval(triggerHealthcheck, INTERVAL);
