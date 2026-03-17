@@ -1,6 +1,7 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
 const path = require("path");
+const fetch = require("node-fetch");
 
 // Umgebungsvariablen
 const EMAIL = process.env.ECOFLOW_EMAIL;
@@ -60,6 +61,16 @@ async function doLogin(page, context) {
 
     await page.waitForSelector(DASHBOARD_SELECTOR, { timeout: 20000 });
 
+    
+    if (process.env.HEALTHCHECK_URL) {
+        try {
+            const res = await fetch(process.env.HEALTHCHECK_URL);
+            console.log(`Healthcheck nach Login ausgelöst – Status: ${res.status}`);
+        } catch (e) {
+            console.log("Healthcheck nach Login fehlgeschlagen:", e.message);
+        }
+    }
+
     const successLoginScreenshot = getScreenshotPath("login_success");
     await page.screenshot({ path: successLoginScreenshot });
     console.log(`Login erfolgreich – Screenshot gespeichert: ${successLoginScreenshot}`);
@@ -88,6 +99,7 @@ async function isLoggedOut(page) {
             '--disable-gpu',
             '--disable-software-rasterizer',
             '--disable-extensions',
+            // '--disable-background-networking' ← entfernt, blockiert Login-Requests
             '--disable-background-timer-throttling',
             '--disable-renderer-backgrounding',
             '--no-sandbox'
@@ -99,7 +111,7 @@ async function isLoggedOut(page) {
     });
 
     let page = await context.newPage();
-    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }); // 
+    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' });
 
     if (await isLoggedOut(page)) {
         await doLogin(page, context);
@@ -136,7 +148,7 @@ async function isLoggedOut(page) {
                     console.log("Login gescheitert, Browser neu erstellen");
                     await page.close();
                     page = await context.newPage();
-                    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }); //
+                    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }); 
                 }
 
                 cleanupOldScreenshots();
@@ -151,7 +163,7 @@ async function isLoggedOut(page) {
             await page.screenshot({ path: errorScreenshot });
             console.log(`Error-Screenshot gespeichert: ${errorScreenshot}`);
 
-            await page.reload({ waitUntil: 'domcontentloaded' }); // 
+            await page.reload({ waitUntil: 'domcontentloaded' });
         }
     }
 })();
