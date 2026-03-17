@@ -61,7 +61,6 @@ async function doLogin(page, context) {
 
     await page.waitForSelector(DASHBOARD_SELECTOR, { timeout: 20000 });
 
-    
     if (process.env.HEALTHCHECK_URL) {
         try {
             const res = await fetch(process.env.HEALTHCHECK_URL);
@@ -148,7 +147,7 @@ async function isLoggedOut(page) {
                     console.log("Login gescheitert, Browser neu erstellen");
                     await page.close();
                     page = await context.newPage();
-                    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }); 
+                    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' });
                 }
 
                 cleanupOldScreenshots();
