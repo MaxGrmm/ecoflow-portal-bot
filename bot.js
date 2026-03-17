@@ -35,7 +35,7 @@ function cleanupOldScreenshots() {
 async function doLogin(page, context) {
     console.log("Login wird durchgeführt");
 
-    await page.goto(LOGIN_URL, { waitUntil: 'networkidle' });
+    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(15000);
     await page.waitForSelector('#normal_login_email', { timeout: 45000 });
 
@@ -70,7 +70,6 @@ async function doLogin(page, context) {
 // Prüfen, ob ausgeloggt
 async function isLoggedOut(page) {
     try {
-        await page.waitForTimeout(15000);
         const emailVisible = await page.locator('#normal_login_email').isVisible().catch(() => false);
         const dashboardVisible = await page.locator(DASHBOARD_SELECTOR).isVisible().catch(() => false);
         return emailVisible && !dashboardVisible;
@@ -84,7 +83,15 @@ async function isLoggedOut(page) {
 
     const browser = await chromium.launch({
         headless: true,
-        args: ["--no-sandbox"]
+        args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--disable-extensions',
+            '--disable-background-timer-throttling',
+            '--disable-renderer-backgrounding',
+            '--no-sandbox'
+        ]
     });
 
     const context = await browser.newContext({
@@ -92,7 +99,7 @@ async function isLoggedOut(page) {
     });
 
     let page = await context.newPage();
-    await page.goto(LOGIN_URL, { waitUntil: 'networkidle' });
+    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }); // 
 
     if (await isLoggedOut(page)) {
         await doLogin(page, context);
@@ -129,6 +136,7 @@ async function isLoggedOut(page) {
                     console.log("Login gescheitert, Browser neu erstellen");
                     await page.close();
                     page = await context.newPage();
+                    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }); //
                 }
 
                 cleanupOldScreenshots();
@@ -143,7 +151,7 @@ async function isLoggedOut(page) {
             await page.screenshot({ path: errorScreenshot });
             console.log(`Error-Screenshot gespeichert: ${errorScreenshot}`);
 
-            await page.reload({ waitUntil: 'networkidle' });
+            await page.reload({ waitUntil: 'domcontentloaded' }); // 
         }
     }
 })();
