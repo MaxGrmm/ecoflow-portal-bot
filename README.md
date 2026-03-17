@@ -1,103 +1,134 @@
-# EcoFlow-Bot
+# 🔋 EcoFlow Portal Bot
 
-Automatisierter Bot für das EcoFlow User-Portal, inkl. Screenshot-Management und optionalem Healthcheck.
-
----
-
-## 1. Voraussetzungen
-
-- Docker ≥ 20.x  
-- Docker Compose ≥ 2.x  
+Ein automatisierter Bot auf Basis von [Playwright](https://playwright.dev/), der dauerhaft im EcoFlow User-Portal eingeloggt bleibt und optional einen Healthcheck-Dienst (z. B. Uptime Kuma) in regelmäßigen Abständen benachrichtigt.
 
 ---
 
-## 2. Installation / Build
+## 📦 Inhalt
 
-1. Repository klonen oder Dateien in ein Verzeichnis legen.  
-2. Docker Image bauen:
+| Datei | Beschreibung |
+|---|---|
+| `bot.js` | Hauptbot – Login, Session-Management, Loop |
+| `healthcheck.js` | Optionaler Healthcheck-Pinger |
+| `Dockerfile` | Container-Build auf Playwright-Basis |
+| `docker-compose.yml` | Deployment-Konfiguration |
+
+---
+
+## 🚀 Quickstart
+
+### 1. Volume anlegen
 
 ```bash
-docker-compose build
-````
-
----
-
-## 3. Konfiguration (Environment-Variablen)
-
-Alle Variablen werden in der `docker-compose.yml` gesetzt:
-
-| Variable                    | Beschreibung                                              | Standard / Beispiel           |
-| --------------------------- | --------------------------------------------------------- | ----------------------------- |
-| `ECOFLOW_EMAIL`             | Login E-Mail für EcoFlow Portal                           | `MAILADRESSE`                 |
-| `ECOFLOW_PASSWORD`          | Passwort für EcoFlow Portal                               | `PASSWORT`                    |
-| `HEALTHCHECK_URL`           | Optional: URL, die der Healthcheck alle X Minuten aufruft | `https://example.com/trigger` |
-| `HEALTHCHECK_INTERVAL_MIN`  | Optional: Intervall für Healthcheck in Minuten            | `5`                           |
-| `SCREENSHOT_RETENTION_DAYS` | Anzahl Tage, alte Screenshots aufzubewahren               | `5`                           |
-
-> Hinweis: Healthcheck wird nur aktiviert, wenn `HEALTHCHECK_URL` gesetzt ist.
-
----
-
-## 4. Start des Bots
-
-```bash
-docker-compose up -d
+docker volume create ecoflow-bot
 ```
 
-* Der Bot läuft **ständig im Hintergrund**.
-* Healthcheck läuft **parallel**, falls konfiguriert.
-* Screenshots werden in `/app/screenshots` gespeichert.
+### 2. `docker-compose.yml` anpassen
 
----
+Trage deine Zugangsdaten und optionale Einstellungen ein:
 
-## 5. Logs ansehen
-
-```bash
-docker-compose logs -f ecoflow-bot
+```yaml
+environment:
+  - ECOFLOW_EMAIL=deine@email.de
+  - ECOFLOW_PASSWORD=deinPasswort
 ```
 
-* Hier siehst du: Login-Prozesse, Healthcheck-Status, Screenshots und eventuelle Fehler.
-
----
-
-## 6. Healthcheck
-
-* Optional: ruft eine URL ab, **alle X Minuten**, nur wenn der Bot korrekt eingeloggt ist.
-* Aktiviert über: `HEALTHCHECK_URL` und `HEALTHCHECK_INTERVAL_MIN`.
-* Deaktiviert, wenn `HEALTHCHECK_URL` leer ist.
-
----
-
-## 7. Screenshot-Retention
-
-* Alte Screenshots werden automatisch nach `SCREENSHOT_RETENTION_DAYS` gelöscht.
-* Konfigurierbar über ENV: `SCREENSHOT_RETENTION_DAYS`.
-
----
-
-## 8. Stopp / Neustart
+### 3. Container starten
 
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose up -d --build
 ```
 
-* Nutzt das gleiche Volume `/app` für persistente Daten wie Screenshots und `session.json`.
+### 4. Logs prüfen
+
+```bash
+docker compose logs -f
+```
 
 ---
 
-## 9. Hinweise
+## ⚙️ Umgebungsvariablen
 
-* Base Image: `mcr.microsoft.com/playwright:v1.58.2-jammy`
-* Node 16 wird verwendet (kompatibel mit `node-fetch@2`)
-* Bot-Flow selbst wurde **nicht verändert** – nur Healthcheck und Screenshot-Retention sind optional und konfigurierbar.
+| Variable | Pflicht | Standard | Beschreibung |
+|---|---|---|---|
+| `ECOFLOW_EMAIL` | ✅ | – | E-Mail-Adresse des EcoFlow-Accounts |
+| `ECOFLOW_PASSWORD` | ✅ | – | Passwort des EcoFlow-Accounts |
+| `ECOFLOW_PORTAL_URL` | ❌ | `https://user-portal.ecoflow.com/user/eu/de/login` | Login-URL (z. B. für andere Regionen anpassbar) |
+| `HEALTHCHECK_URL` | ❌ | – | URL die nach jedem Intervall gepingt wird (z. B. Uptime Kuma) |
+| `HEALTHCHECK_INTERVAL_MIN` | ❌ | `5` | Intervall des Healthchecks in Minuten |
+| `SCREENSHOT_RETENTION_DAYS` | ❌ | `5` | Aufbewahrungsdauer von Screenshots in Tagen |
+
+> ⚠️ Wird `HEALTHCHECK_URL` nicht gesetzt, beendet sich `healthcheck.js` automatisch und der Bot läuft normal weiter.
 
 ---
 
-## 10. Troubleshooting / Tipps
+## 🗂️ Volumes
 
-* **Healthcheck funktioniert nicht:** Prüfe, ob `HEALTHCHECK_URL` gesetzt ist und erreichbar.
-* **Screenshots werden nicht gelöscht:** Prüfe, ob `SCREENSHOT_RETENTION_DAYS` korrekt gesetzt ist und Schreibrechte im Volume bestehen.
-* **Bot startet nicht:** Prüfe Logs via `docker-compose logs -f ecoflow-bot` für Fehler bei Node oder Playwright.
+Das Volume `ecoflow-bot` wird als externer Docker-Volume eingebunden und unter `/app` gemountet. Dort werden gespeichert:
+
+- `session.json` – die gespeicherte Browser-Session
+- `/app/screenshots/` – Debug-Screenshots (werden automatisch nach `SCREENSHOT_RETENTION_DAYS` Tagen gelöscht)
 
 ---
+
+## 🐛 Debugging
+
+Der Bot erstellt automatisch Screenshots bei folgenden Ereignissen:
+
+| Dateiname | Zeitpunkt |
+|---|---|
+| `login_before_fill_*.png` | Vor dem Ausfüllen des Login-Formulars |
+| `login_after_fill_*.png` | Nach dem Ausfüllen |
+| `login_after_click_*.png` | Nach dem Klick auf „Anmelden" |
+| `login_success_*.png` | Nach erfolgreichem Login |
+| `logout_*.png` | Wenn ein Logout erkannt wird |
+| `error_*.png` | Bei unerwarteten Fehlern |
+
+Screenshots sind über das Volume zugänglich:
+
+```bash
+docker cp ecoflow-bot:/app/screenshots ./screenshots
+```
+
+---
+
+## 🔄 Funktionsweise
+
+```
+Start
+ ├─ session.json vorhanden? → Session laden, Login überspringen
+ └─ Kein Session? → Login durchführen & session.json speichern
+
+Loop (alle 30 Sekunden)
+ ├─ Noch eingeloggt? → weiter warten
+ └─ Ausgeloggt erkannt?
+      ├─ Login erneut versuchen (max. 3x)
+      └─ Fehlgeschlagen? → Neue Browser-Seite erstellen & erneut versuchen
+```
+
+---
+
+## 🛠️ Technischer Stack
+
+| Technologie | Version |
+|---|---|
+| Node.js | via Playwright-Image (Jammy) |
+| Playwright | `^1.58.2` |
+| node-fetch | `^2.6.7` |
+| Basis-Image | `mcr.microsoft.com/playwright:v1.58.2-jammy` |
+
+---
+
+## 📝 Hinweise
+
+- Der Bot läuft im **headless Chromium**-Modus, Xvfb wird für einen virtuellen Display verwendet
+- Die `session.json` wird nach erfolgreichem Login automatisch gespeichert und bei Neustart wiederverwendet
+- Das Portal erkennt unter Umständen headless Browser – bei Login-Problemen die Screenshots unter `/app/screenshots` prüfen
+
+## ⚠️ Disclaimer
+
+Dieses Projekt ist ein inoffizielles Community-Projekt und steht in keiner 
+Verbindung zur EcoFlow Technology Co., Ltd. Es wird weder von EcoFlow 
+unterstützt, gesponsert noch offiziell bereitgestellt. Die Nutzung erfolgt 
+auf eigene Verantwortung. EcoFlow und alle zugehörigen Markennamen sind 
+Eigentum der EcoFlow Technology Co., Ltd.
